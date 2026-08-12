@@ -1,0 +1,52 @@
+name: build-macos
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            arch: arm64
+          - runner: macos-13
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: python -m pip install --upgrade pip -r requirements.txt pyinstaller pytest
+      - name: Run tests
+        run: python -m pytest -q
+      - name: Build PlainTextEditor.app
+        run: >
+          pyinstaller --windowed --name PlainTextEditor
+          --icon plain-text-editor.icns
+          --hidden-import plaintexteditor.__main__
+          --add-data "plain-text-editor.png:."
+          --collect-all customtkinter
+          plain_text_editor_app.py
+      - name: Package DMG
+        run: |
+          VER="$(python -c 'import plaintexteditor; print(plaintexteditor.__version__)')"
+          DMG="PlainTextEditor-$VER-macos-${{ matrix.arch }}.dmg"
+          STAGE="packaging/dmgroot"
+          mkdir -p "$STAGE" packaging/dist
+          cp -R "dist/PlainTextEditor.app" "$STAGE/"
+          cp quickopen-root.crt LICENSE README.md "$STAGE/" 2>/dev/null || true
+          ln -s /Applications "$STAGE/Applications"
+          hdiutil create -volname "PlainTextEditor" -srcfolder "$STAGE" \
+            -fs HFS+ -format UDZO -ov "packaging/dist/$DMG"
+          hdiutil verify "packaging/dist/$DMG"
+          echo "DMG=$DMG" >> "$GITHUB_ENV"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: plain-text-editor-macos-${{ matrix.arch }}
+          path: packaging/dist/PlainTextEditor-*-macos-${{ matrix.arch }}.dmg
+          if-no-files-found: error
