@@ -1,0 +1,13 @@
+{
+  "slug": "plain-text-editor",
+  "name": "Plain Text Editor",
+  "tagline": "A fast, clean Notepad-style editor that respects your file's encoding and line endings.",
+  "categorySlug": "word-processing",
+  "license": "Apache-2.0",
+  "description": "Open, edit and save plain text files the way Windows Notepad does \u2014 instantly, with zero clutter and zero lock-in. Find & replace, go-to-line, word wrap, font zoom and an F5 time/date stamp cover the essentials, while the status bar always shows your line, column, encoding and line endings. UTF-8, UTF-16 and ANSI files keep their exact encoding, BOM and CRLF/LF endings on save. Recent files, unsaved-change prompts and full keyboard shortcuts included. No rich text, no telemetry \u2014 just text.",
+  "aiStack": "Python (tkinter + CLI)",
+  "platforms": [
+    "windows"
+  ],
+  "buildEntry": "plain_text_editor_app.py"
+}
