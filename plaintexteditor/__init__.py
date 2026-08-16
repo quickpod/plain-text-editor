@@ -24,6 +24,6 @@ from __future__ import annotations
 
 from .errors import PlainTextEditorError
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 __all__ = ["PlainTextEditorError", "textio", "editing", "guiconfig"]

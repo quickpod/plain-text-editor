@@ -90,6 +90,85 @@ def offset_of_line(text, line):
     return offset
 
 
+def _split_keep_trailing(text):
+    r"""Split into lines WITHOUT their ``\n``; remembers a trailing newline."""
+    lines = text.split("\n")
+    trailing = text.endswith("\n")
+    if trailing:
+        lines = lines[:-1]
+    return lines, trailing
+
+
+def _join(lines, trailing):
+    return "\n".join(lines) + ("\n" if trailing else "")
+
+
+def duplicate_line(text, line):
+    """Insert a copy of 1-based *line* directly below it; returns new text.
+
+    The Notepad++ Ctrl+D behaviour.  Raises on an out-of-range line.
+    """
+    lines, trailing = _split_keep_trailing(text)
+    if not isinstance(line, int) or line < 1 or line > max(1, len(lines)):
+        raise PlainTextEditorError(
+            f"line number must be between 1 and {max(1, len(lines))}")
+    if not lines:
+        lines = [""]
+    lines.insert(line, lines[line - 1])
+    return _join(lines, trailing)
+
+
+def delete_line(text, line):
+    """Remove 1-based *line* entirely; returns new text.
+
+    Deleting the only line leaves an empty document.
+    """
+    lines, trailing = _split_keep_trailing(text)
+    if not isinstance(line, int) or line < 1 or line > max(1, len(lines)):
+        raise PlainTextEditorError(
+            f"line number must be between 1 and {max(1, len(lines))}")
+    if not lines:
+        return ""
+    del lines[line - 1]
+    if not lines:
+        return ""
+    return _join(lines, trailing)
+
+
+def move_line(text, line, delta):
+    """Move 1-based *line* by *delta* (-1 up / +1 down), clamped in range.
+
+    Returns ``(new_text, new_line)`` — the Notepad++ Ctrl+Shift+Up/Down
+    behaviour.  A move past either end is a no-op, never an error.
+    """
+    lines, trailing = _split_keep_trailing(text)
+    if not isinstance(line, int) or line < 1 or line > max(1, len(lines)):
+        raise PlainTextEditorError(
+            f"line number must be between 1 and {max(1, len(lines))}")
+    if not lines:
+        return text, 1
+    target = max(1, min(len(lines), line + int(delta)))
+    if target == line:
+        return text, line
+    row = lines.pop(line - 1)
+    lines.insert(target - 1, row)
+    return _join(lines, trailing), target
+
+
+def trim_trailing_whitespace(text):
+    """Strip spaces/tabs from every line end; returns ``(new_text, count)``
+    where *count* is the number of lines that changed."""
+    lines, trailing = _split_keep_trailing(text)
+    changed = 0
+    out = []
+    for ln in lines:
+        stripped = ln.rstrip(" \t")
+        if stripped != ln:
+            changed += 1
+        out.append(stripped)
+    return _join(out, trailing), changed
+
+
 def f5_stamp(t=None):
     """The Notepad F5 time/date stamp, e.g. ``10:35 PM 8/12/2026``."""
     t = time.localtime() if t is None else t

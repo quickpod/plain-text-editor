@@ -161,6 +161,44 @@ def test_offset_and_line_col_are_inverse():
 # ---------------------------------------------------------------------------
 # F5 stamp
 # ---------------------------------------------------------------------------
+def test_duplicate_line():
+    assert editing.duplicate_line("a\nb\nc", 2) == "a\nb\nb\nc"
+    assert editing.duplicate_line("only", 1) == "only\nonly"
+    assert editing.duplicate_line("a\nb\n", 2) == "a\nb\nb\n"
+    with pytest.raises(PlainTextEditorError):
+        editing.duplicate_line("a\nb", 3)
+
+
+def test_delete_line():
+    assert editing.delete_line("a\nb\nc", 2) == "a\nc"
+    assert editing.delete_line("only", 1) == ""
+    assert editing.delete_line("a\nb\n", 2) == "a\n"
+    with pytest.raises(PlainTextEditorError):
+        editing.delete_line("a", 2)
+
+
+def test_move_line():
+    assert editing.move_line("a\nb\nc", 1, +1) == ("b\na\nc", 2)
+    assert editing.move_line("a\nb\nc", 3, -1) == ("a\nc\nb", 2)
+    # clamped at the ends: no-op, never an error
+    assert editing.move_line("a\nb", 1, -1) == ("a\nb", 1)
+    assert editing.move_line("a\nb", 2, +1) == ("a\nb", 2)
+    assert editing.move_line("a\nb\nc\n", 1, +1) == ("b\na\nc\n", 2)
+    with pytest.raises(PlainTextEditorError):
+        editing.move_line("a", 5, 1)
+
+
+def test_trim_trailing_whitespace():
+    text = "a  \nb\t\nc\nno-change"
+    out, changed = editing.trim_trailing_whitespace(text)
+    assert out == "a\nb\nc\nno-change"
+    assert changed == 2
+    out2, changed2 = editing.trim_trailing_whitespace(out)
+    assert (out2, changed2) == (out, 0)
+    # a trailing newline survives
+    assert editing.trim_trailing_whitespace("x \n")[0] == "x\n"
+
+
 def test_f5_stamp_format():
     t = time.struct_time((2026, 8, 5, 22, 35, 0, 2, 217, 0))
     assert editing.f5_stamp(t) == "10:35 PM 8/05/2026"

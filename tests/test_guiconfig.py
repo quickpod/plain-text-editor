@@ -8,10 +8,11 @@ from plaintexteditor import guiconfig
 
 def test_defaults_when_no_config(home):
     cfg = guiconfig.load()
-    assert cfg["theme"] == "dark"
+    assert cfg["theme"] == "system"        # fresh installs follow the OS
     assert cfg["recent"] == []
     assert cfg["wrap"] is True
     assert cfg["mono"] is True
+    assert cfg["linenums"] is True
     assert cfg["font_size"] == guiconfig.DEFAULT_FONT
     assert cfg["last_dir"] is None
 
@@ -20,7 +21,7 @@ def test_corrupt_config_never_fatal(home):
     os.makedirs(guiconfig.config_dir(), exist_ok=True)
     with open(guiconfig.config_path(), "w") as fh:
         fh.write("{not json!!")
-    assert guiconfig.load()["theme"] == "dark"
+    assert guiconfig.load()["theme"] == "system"
     guiconfig.set_theme("light")            # and saving over it works
     assert guiconfig.get_theme() == "light"
 
@@ -43,13 +44,17 @@ def test_theme_roundtrip(home):
     assert guiconfig.get_theme() == "light"
     guiconfig.set_theme("bogus")            # ignored
     assert guiconfig.get_theme() == "light"
+    guiconfig.set_theme("system")           # explicit return to OS-follow
+    assert guiconfig.get_theme() == "system"
 
 
-def test_wrap_mono_roundtrip(home):
+def test_wrap_mono_linenums_roundtrip(home):
     guiconfig.set_wrap(False)
     guiconfig.set_mono(False)
+    guiconfig.set_linenums(False)
     assert guiconfig.get_wrap() is False
     assert guiconfig.get_mono() is False
+    assert guiconfig.get_linenums() is False
 
 
 def test_font_size_clamped(home):

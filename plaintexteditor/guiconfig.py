@@ -1,8 +1,9 @@
 r"""Tiny JSON-backed config + per-OS app directories for Plain Text Editor.
 
-Stores the chosen theme ("light"/"dark"), the recent-files list, the word
-wrap / monospace toggles, the font size and the last folder used by the
-Open/Save dialogs.  On Windows the file lives at
+Stores the theme preference ("system" follows the OS Aura Dark/Light live;
+"light"/"dark" are explicit overrides), the recent-files list, the word
+wrap / monospace / line-number toggles, the font size and the last folder
+used by the Open/Save dialogs.  On Windows the file lives at
 ``%LOCALAPPDATA%\PlainTextEditor\config.json``; elsewhere it follows XDG
 (``$XDG_CONFIG_HOME/plaintexteditor/config.json``, defaulting to
 ``~/.config/plaintexteditor/config.json``).  Every function is defensive --
@@ -22,7 +23,7 @@ import os
 APP_DIRNAME = "PlainTextEditor"
 CONFIG_NAME = "config.json"
 MAX_RECENT = 10
-VALID_THEMES = ("light", "dark")
+VALID_THEMES = ("system", "light", "dark")
 MIN_FONT, MAX_FONT, DEFAULT_FONT = 6, 72, 12
 
 
@@ -80,8 +81,8 @@ def default_open_dir():
 
 
 def _defaults():
-    return {"theme": "dark", "recent": [], "wrap": True, "mono": True,
-            "font_size": DEFAULT_FONT, "last_dir": None}
+    return {"theme": "system", "recent": [], "wrap": True, "mono": True,
+            "linenums": True, "font_size": DEFAULT_FONT, "last_dir": None}
 
 
 def load():
@@ -97,7 +98,7 @@ def load():
             if isinstance(recent, list):
                 cfg["recent"] = [p for p in recent
                                  if isinstance(p, str)][:MAX_RECENT]
-            for key in ("wrap", "mono"):
+            for key in ("wrap", "mono", "linenums"):
                 if isinstance(data.get(key), bool):
                     cfg[key] = data[key]
             size = data.get("font_size")
@@ -117,11 +118,12 @@ def save(cfg):
         size = cfg.get("font_size")
         clean = {
             "theme": cfg.get("theme")
-            if cfg.get("theme") in VALID_THEMES else "dark",
+            if cfg.get("theme") in VALID_THEMES else "system",
             "recent": [p for p in cfg.get("recent", [])
                        if isinstance(p, str)][:MAX_RECENT],
             "wrap": bool(cfg.get("wrap", True)),
             "mono": bool(cfg.get("mono", True)),
+            "linenums": bool(cfg.get("linenums", True)),
             "font_size": size if isinstance(size, int)
             and MIN_FONT <= size <= MAX_FONT else DEFAULT_FONT,
             "last_dir": cfg.get("last_dir")
@@ -146,12 +148,22 @@ def _set(key, value):
 
 
 def get_theme():
+    """The persisted theme preference: "system" (follow the OS Aura
+    Dark/Light live), "light" or "dark"."""
     return _get("theme")
 
 
 def set_theme(theme):
     if theme in VALID_THEMES:
         _set("theme", theme)
+
+
+def get_linenums():
+    return bool(_get("linenums"))
+
+
+def set_linenums(on):
+    _set("linenums", bool(on))
 
 
 def get_wrap():
