@@ -24,6 +24,7 @@ jobs:
           --add-data "plain-text-editor.ico;."
           --add-data "plain-text-editor.png;."
           --collect-all customtkinter
+          --add-data "assets;assets"
           plain_text_editor_app.py
       - name: Stage installer inputs
         shell: pwsh
